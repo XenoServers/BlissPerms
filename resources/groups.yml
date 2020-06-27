@@ -1,0 +1,9 @@
+# This is where groups are stored
+# Available tags: {name}, {chat}, {facName}, {facRank}, {prefix}, {suffix}
+Player:
+  alias: player
+  default: true
+  inheritance: []
+  permissions: []
+  chat: "§7[Player] §a{name} §f>> §f{chat}"
+  nametag: "§7[Player] §a{name}"

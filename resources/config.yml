@@ -1,0 +1,17 @@
+# These are the names that will be blocked from prefixes and suffixes
+prohibited-names:
+  - op
+  - admin
+  - administrator
+  - operator
+  - staff
+
+# This is the name of the factions plugin that you want to use
+# Supported values are FactionsPro, PiggyFactions, or false
+factions-plugin: FactionsPro
+
+# These are the default values that are used when a new group is made or when an invalid group is found
+# Available tags: {name}, {chat}, {facName}, {facRank}, {prefix}, {suffix}
+default:
+  chat: "§7[{group}] §a{name} §f>> §f{chat}"
+  nametag: "§7[{group}] §a{name}"

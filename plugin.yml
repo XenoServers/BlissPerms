@@ -1,0 +1,34 @@
+name: BlissPerms
+main: Xenophilicy\BlissPerms\BlissPerms
+version: 1.0.0
+api: 3.0.0
+author: Xenophilicy
+permissions:
+  blissperms:
+    default: op
+    children:
+      blissperms.colorchat:
+        default: op
+      blissperms.setprefix:
+        default: op
+        children:
+          blissperms.setprefix.self:
+            default: op
+      blissperms.setsuffix:
+        default: op
+        children:
+          blissperms.setsuffix.self:
+            default: op
+      blissperms.setperm:
+        default: op
+      blissperms.group:
+        default: op
+        children:
+          blissperms.group.add:
+            default: op
+          blissperms.group.remove:
+            default: op
+          blissperms.group.list:
+            default: op
+          blissperms.group.set:
+            default: op
