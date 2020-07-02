@@ -17,6 +17,7 @@ use Xenophilicy\BlissPerms\Command\SetPrefix;
 use Xenophilicy\BlissPerms\Command\SetSuffix;
 use Xenophilicy\BlissPerms\Data\PlayerManager;
 use Xenophilicy\BlissPerms\Factions\FactionsPro;
+use Xenophilicy\BlissPerms\Factions\PiggyFactions;
 use Xenophilicy\BlissPerms\Provider\GroupProvider;
 
 /**
