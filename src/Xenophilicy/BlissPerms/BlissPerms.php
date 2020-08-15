@@ -185,7 +185,7 @@ class BlissPerms extends PluginBase {
     
     /**
      * @param Player $player
-     * @param string $prefix
+     * @param string|null $prefix
      * @return bool
      */
     public function setPrefix(Player $player, ?string $prefix){
@@ -203,7 +203,7 @@ class BlissPerms extends PluginBase {
     
     /**
      * @param Player $player
-     * @param string $suffix
+     * @param string|null $suffix
      * @return bool
      */
     public function setSuffix(Player $player, ?string $suffix){

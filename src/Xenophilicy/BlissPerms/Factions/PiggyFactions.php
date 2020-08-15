@@ -2,13 +2,17 @@
 
 namespace Xenophilicy\BlissPerms\Factions;
 
+use DaPigGuy\PiggyFactions\utils\Roles;
 use pocketmine\Player;
 use pocketmine\plugin\Plugin;
 use pocketmine\Server;
-use DaPigGuy\PiggyFactions\utils\Roles;
 
-class PiggyFactions implements FactionsInterface{
-
+/**
+ * Class PiggyFactions
+ * @package Xenophilicy\BlissPerms\Factions
+ */
+class PiggyFactions implements FactionsInterface {
+    
     /**
      * @param Player $player
      * @return mixed
@@ -16,14 +20,14 @@ class PiggyFactions implements FactionsInterface{
     public function getPlayerFaction(Player $player){
         return $this->getAPI()->getPlayerFaction($player->getName());
     }
-
+    
     /**
      * @return Plugin|null
      */
     public function getAPI(){
         return Server::getInstance()->getPluginManager()->getPlugin("PiggyFactions");
     }
-
+    
     /**
      * @param Player $player
      * @return string

@@ -119,6 +119,7 @@ class Group extends PluginCommand {
                 }
                 $this->plugin->getPlayerManager()->setGroup($player, $group);
                 if($player instanceof Player){
+                    $this->plugin->updatePermissions($player);
                     $player->sendMessage(TF::GREEN . "Your group was set to " . TF::AQUA . $group->getName());
                     if($sender === $player) return true;
                 }
