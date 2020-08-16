@@ -24,7 +24,7 @@ class SetPrefix extends PluginCommand {
         parent::__construct($name, $plugin);
         $this->plugin = $plugin;
         $this->setDescription("Set your prefix");
-        $this->setPermission("blissperms.prefix");
+        $this->setPermission("blissperms.setprefix");
     }
     
     /**
@@ -34,7 +34,7 @@ class SetPrefix extends PluginCommand {
      * @return bool
      */
     public function execute(CommandSender $sender, string $label, array $args): bool{
-        if(!$sender->hasPermission($this->getPermission() . "self")){
+        if(!$sender->hasPermission($this->getPermission() . ".self")){
             $sender->sendMessage(TF::RED . "You don't have permission to set prefixes");
             return false;
         }

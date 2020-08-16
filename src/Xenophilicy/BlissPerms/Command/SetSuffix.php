@@ -24,7 +24,7 @@ class SetSuffix extends PluginCommand {
         parent::__construct($name, $plugin);
         $this->plugin = $plugin;
         $this->setDescription("Set your suffix");
-        $this->setPermission("blissperms.suffix");
+        $this->setPermission("blissperms.setsuffix");
     }
     
     /**
@@ -34,7 +34,7 @@ class SetSuffix extends PluginCommand {
      * @return bool
      */
     public function execute(CommandSender $sender, string $label, array $args): bool{
-        if(!$sender->hasPermission($this->getPermission() . "self")){
+        if(!$sender->hasPermission($this->getPermission() . ".self")){
             $sender->sendMessage(TF::RED . "You don't have permission to set suffixes");
             return false;
         }
