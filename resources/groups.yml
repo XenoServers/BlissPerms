@@ -1,5 +1,5 @@
 # This is where groups are stored
-# Available tags: {name}, {chat}, {facName}, {facRank}, {prefix}, {suffix}
+# Available tags: {name}, {chat}, {facName}, {facRank}, {prefix}, {suffix}, {rank}
 Player:
   alias: player
   default: true

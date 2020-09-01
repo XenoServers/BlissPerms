@@ -105,6 +105,16 @@ class Rank extends Command implements PluginIdentifiableCommand {
                     return false;
                 }
                 $rankName = array_shift($args);
+                if(strtolower($rankName) === "none"){
+                    $this->plugin->getPlayerManager()->setRank($player, null);
+                    if($player instanceof Player){
+                        $this->plugin->updatePermissions($player);
+                        $player->sendMessage(TF::GREEN . "Your rank was reset to NONE");
+                        if($sender === $player) return true;
+                    }
+                    $sender->sendMessage(TF::GREEN . "Reset rank for " . TF::YELLOW . $player->getName());
+                    return true;
+                }
                 $rank = $this->plugin->getRank($rankName);
                 if($rank === null){
                     $sender->sendMessage(TF::RED . "That rank doesn't exist");

@@ -153,9 +153,9 @@ class BlissPerms extends PluginBase {
     
     public function getPermissions(Player $player): array{
         $group = $this->getPlayerManager()->getGroup($player);
-        $rank = $this->getPlayerManager()->getRank($player);
+        $rankPerms = is_null($this->getPlayerManager()->getRank($player)) ? [] : $this->getPlayerManager()->getRank($player)->getPermissions();
         $userPerms = $this->getPlayerManager()->getUserPermissions($player);
-        return array_merge($userPerms, $group->getPermissions(), $rank->getPermissions());
+        return array_merge($userPerms, $group->getPermissions(), $rankPerms);
     }
     
     public function getPlayerManager(): PlayerManager{
@@ -356,7 +356,8 @@ class BlissPerms extends PluginBase {
             $text = str_replace("{facName}", "", $text);
             $text = str_replace("{facRank}", "", $text);
         }
-        $text = str_replace("{rank}", $this->getPlayerManager()->getRank($player)->getNode("format"), $text);
+        $rank = is_null($this->getPlayerManager()->getRank($player)) ? "" : $this->getPlayerManager()->getRank($player)->getNode("format");
+        $text = str_replace("{rank}", $rank, $text);
         return $text;
     }
     

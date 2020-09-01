@@ -53,8 +53,9 @@ class PlayerManager {
     
     public function getPlayerData(IPlayer $player): array{
         $userName = strtolower($player->getName());
+        $rank = is_null($this->plugin->getDefaultRank()) ? null : $this->plugin->getDefaultRank()->getName();
         if(!$this->players->exists($userName)){
-            return ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $this->plugin->getDefaultRank()->getName(), "permissions" => []];
+            return ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $rank, "permissions" => []];
         }
         return $this->players->get($userName);
     }
@@ -84,26 +85,22 @@ class PlayerManager {
     public function setPlayerData(IPlayer $player, array $tempUserData): void{
         $userName = strtolower($player->getName());
         if(!$this->players->exists($userName)){
-            $this->players->set($userName, ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $this->plugin->getDefaultRank()->getName(), "permissions" => []]);
+            $rank = is_null($this->plugin->getDefaultRank()) ? null : $this->plugin->getDefaultRank()->getName();
+            $this->players->set($userName, ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $rank, "permissions" => []]);
         }
         if(isset($tempUserData["userName"])) unset($tempUserData["userName"]);
         $this->players->set($userName, $tempUserData);
         $this->players->save();
     }
     
-    public function getRank(Player $player): BlissRank{
+    public function getRank(Player $player): ?BlissRank{
         $name = $this->getNode($player, "rank");
-        $rank = $this->plugin->getRank($name);
-        if($rank === null){
-            $default = $this->plugin->getDefaultRank();
-            $this->setRank($player, $default);
-            return $default;
-        }
-        return $rank;
+        return $this->plugin->getRank($name);
     }
     
-    public function setRank(Player $player, BlissRank $rank): void{
-        $this->setNode($player, "rank", $rank->getName());
+    public function setRank(Player $player, ?BlissRank $rank): void{
+        $rankName = is_null($rank) ? null : $rank->getName();
+        $this->setNode($player, "rank", $rankName);
         $nametag = $this->plugin->getNametag($player);
         $player->setNameTag($nametag);
         $this->plugin->updatePermissions($player);
