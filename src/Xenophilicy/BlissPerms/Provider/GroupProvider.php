@@ -12,49 +12,34 @@ use Xenophilicy\BlissPerms\BlissPerms;
  */
 class GroupProvider {
     
+    /** @var Config */
     private $config;
+    /** @var BlissPerms */
     private $plugin;
     
-    /**
-     * @param BlissPerms $plugin
-     */
     public function __construct(BlissPerms $plugin){
         $this->plugin = $plugin;
         $this->plugin->saveResource("groups.yml");
         $this->config = new Config($this->plugin->getDataFolder() . "groups.yml", Config::YAML);
     }
     
-    /**
-     * @param BlissGroup $group
-     * @return mixed
-     */
-    public function getData(BlissGroup $group){
+    public function getData(BlissGroup $group): array{
         $name = $group->getName();
         if(!isset($this->getConfig()->getAll()[$name]) || !is_array($this->getConfig()->getAll()[$name])) return [];
         return $this->getConfig()->getAll()[$name];
     }
     
-    /**
-     * @return mixed
-     */
-    public function getConfig(){
+    public function getConfig(): Config{
         return $this->config;
     }
     
-    /**
-     * @param BlissGroup $group
-     * @param array $temp
-     */
-    public function setData(BlissGroup $group, array $temp){
+    public function setData(BlissGroup $group, array $temp): void{
         $name = $group->getName();
         $this->config->set($name, $temp);
         $this->config->save();
     }
     
-    /**
-     * @param array $temp
-     */
-    public function setAllData(array $temp){
+    public function setAllData(array $temp): void{
         $this->config->setAll($temp);
         $this->config->save();
     }

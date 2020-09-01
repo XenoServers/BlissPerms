@@ -20,11 +20,11 @@ interface FactionsInterface {
      * @param Player $player
      * @return mixed
      */
-    public function getPlayerFaction(Player $player);
+    public function getFaction(Player $player);
     
     /**
      * @param Player $player
      * @return mixed
      */
-    public function getPlayerRank(Player $player);
+    public function getFactionRank(Player $player);
 }

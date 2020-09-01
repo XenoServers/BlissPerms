@@ -3,16 +3,16 @@
 namespace Xenophilicy\BlissPerms;
 
 /**
- * Class BlissGroup
+ * Class BlissRank
  * @package Xenophilicy\BlissPerms
  */
-class BlissGroup {
+class BlissRank {
     
     /** @var string */
     private $name;
     /** @var BlissPerms */
     private $plugin;
-    /** @var BlissGroup */
+    /** @var BlissRank[] */
     private $parents = [];
     
     public function __construct(BlissPerms $plugin, string $name){
@@ -28,8 +28,8 @@ class BlissGroup {
         return $this->name;
     }
     
-    public function getAlias(): ?string{
-        return $this->getNode("alias") ?? null;
+    public function getAlias(): string{
+        return $this->getNode("alias") ?? $this->name;
     }
     
     /**
@@ -42,7 +42,7 @@ class BlissGroup {
     }
     
     public function getData(): array{
-        return $this->plugin->getGroupProvider()->getData($this);
+        return $this->plugin->getRankProvider()->getData($this);
     }
     
     public function getPermissions(): array{
@@ -59,7 +59,7 @@ class BlissGroup {
     }
     
     /**
-     * @return BlissGroup[]
+     * @return BlissRank[]
      */
     public function getParents(): array{
         if($this->parents === []){
@@ -67,7 +67,7 @@ class BlissGroup {
                 return [];
             }
             foreach($this->getNode("inheritance") as $name){
-                $parent = $this->plugin->getGroup($name);
+                $parent = $this->plugin->getRank($name);
                 if($parent !== null) $this->parents[] = $parent;
             }
         }
@@ -78,20 +78,6 @@ class BlissGroup {
         return ($this->getNode("default") === true);
     }
     
-    /**
-     * @param string $node
-     * @param $value
-     */
-    public function setNode(string $node, $value): void{
-        $temp = $this->getData();
-        $temp[$node] = $value;
-        $this->setData($temp);
-    }
-    
-    public function setData(array $data): void{
-        $this->plugin->getGroupProvider()->setData($this, $data);
-    }
-    
     public function sortPermissions(): void{
         $temp = $this->getData();
         if(isset($temp["permissions"])){
@@ -99,5 +85,9 @@ class BlissGroup {
             sort($temp["permissions"]);
         }
         $this->setData($temp);
+    }
+    
+    public function setData(array $data): void{
+        $this->plugin->getRankProvider()->setData($this, $data);
     }
 }

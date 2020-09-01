@@ -16,7 +16,7 @@ class FactionsPro implements FactionsInterface {
      * @param Player $player
      * @return mixed
      */
-    public function getPlayerFaction(Player $player){
+    public function getFaction(Player $player){
         return $this->getAPI()->getPlayerFaction($player->getName());
     }
     
@@ -31,7 +31,7 @@ class FactionsPro implements FactionsInterface {
      * @param Player $player
      * @return string
      */
-    public function getPlayerRank(Player $player){
+    public function getFactionRank(Player $player){
         if(!$this->getAPI()->isInFaction($player->getName())){
             return '';
         }

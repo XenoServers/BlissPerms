@@ -49,6 +49,7 @@ class SetPerm extends PluginCommand {
         }
         $permission = array_shift($args);
         $this->plugin->getPlayerManager()->setPermission($player, $permission);
+        $this->plugin->updatePermissions($player);
         $sender->sendMessage(TF::GREEN . "Permission " . TF::AQUA . $permission . TF::GREEN . " added to " . TF::AQUA . $player->getName());
         return true;
     }

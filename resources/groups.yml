@@ -3,7 +3,7 @@
 Player:
   alias: player
   default: true
-  inheritance: []
-  permissions: []
+  inheritance: [ ]
+  permissions: [ ]
   chat: "§7[Player] §a{name} §f>> §f{chat}"
   nametag: "§7[Player] §a{name}"

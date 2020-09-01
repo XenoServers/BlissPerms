@@ -12,6 +12,7 @@ use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
 use pocketmine\utils\UUID;
 use Xenophilicy\BlissPerms\Command\Group;
+use Xenophilicy\BlissPerms\Command\Rank;
 use Xenophilicy\BlissPerms\Command\SetPerm;
 use Xenophilicy\BlissPerms\Command\SetPrefix;
 use Xenophilicy\BlissPerms\Command\SetSuffix;
@@ -19,6 +20,7 @@ use Xenophilicy\BlissPerms\Data\PlayerManager;
 use Xenophilicy\BlissPerms\Factions\FactionsPro;
 use Xenophilicy\BlissPerms\Factions\PiggyFactions;
 use Xenophilicy\BlissPerms\Provider\GroupProvider;
+use Xenophilicy\BlissPerms\Provider\RankProvider;
 
 /**
  * Class BlissPerms
@@ -30,76 +32,91 @@ class BlissPerms extends PluginBase {
     const INVALID = -1;
     const EXISTS = 0;
     const SUCCESS = 1;
+    /** @var array */
     public static $settings;
+    /** @var PlayerManager */
     private $playerManager;
+    /** @var array */
     private $attachments = [];
+    /** @var FactionsPro|PiggyFactions */
     private $factions;
+    /** @var GroupProvider */
     private $groupProvider;
+    /** @var RankProvider */
+    private $rankProvider;
+    /** @var array */
     private $groups = [];
+    /** @var array */
+    private $ranks = [];
     
-    public function onLoad(){
+    public function onLoad(): void{
         $this->saveDefaultConfig();
         $config = new Config($this->getDataFolder() . "config.yml", Config::YAML);
         self::$settings = $config->getAll();
         $this->playerManager = new PlayerManager($this);
     }
     
-    public function onEnable(){
+    public function onEnable(): void{
         $this->getServer()->getPluginManager()->registerEvents(new EventListener($this), $this);
         $this->registerCommands();
-        $this->setProvider();
+        $this->setProviders();
         $this->registerPlayers();
         $this->loadFactionsPlugin();
     }
     
-    private function registerCommands(){
+    private function registerCommands(): void{
         $cmdMap = $this->getServer()->getCommandMap();
         $cmdMap->register("group", new Group("group", $this));
+        $cmdMap->register("rank", new Rank("rank", $this));
         $cmdMap->register("setperm", new SetPerm("setperm", $this));
         $cmdMap->register("setprefix", new SetPrefix("setprefix", $this));
         $cmdMap->register("setsuffix", new SetSuffix("setsuffix", $this));
     }
     
-    private function setProvider(){
-        $provider = new GroupProvider($this);
-        $this->groupProvider = $provider;
+    private function setProviders(): void{
+        $this->groupProvider = new GroupProvider($this);
+        $this->rankProvider = new RankProvider($this);
         $this->updateGroups();
+        $this->updateRanks();
     }
     
-    private function updateGroups(){
+    private function updateGroups(): void{
         $this->groups = [];
-        foreach(array_keys($this->getGroupProvider()->getConfig()->getAll()) as $groupName){
-            $this->groups[$groupName] = new BlissGroup($this, $groupName);
-            $this->groups[$groupName]->sortPermissions();
+        foreach(array_keys($this->getGroupProvider()->getConfig()->getAll()) as $name){
+            $this->groups[$name] = new BlissGroup($this, $name);
+            $this->groups[$name]->sortPermissions();
         }
     }
     
-    /**
-     * @return GroupProvider
-     */
-    public function getGroupProvider(){
-        if(!$this->isValidProvider()) $this->setProvider();
+    public function getGroupProvider(): GroupProvider{
+        if(!$this->isValidProvider(true)) $this->setProviders();
         return $this->groupProvider;
     }
     
-    /**
-     * @return bool
-     */
-    private function isValidProvider(){
-        if(!$this->groupProvider instanceof GroupProvider) return false;
-        return true;
+    private function isValidProvider(bool $group): bool{
+        if($group) return $this->groupProvider instanceof GroupProvider;else return $this->rankProvider instanceof RankProvider;
     }
     
-    private function registerPlayers(){
+    private function updateRanks(): void{
+        $this->ranks = [];
+        foreach(array_keys($this->getRankProvider()->getConfig()->getAll()) as $name){
+            $this->ranks[$name] = new BlissRank($this, $name);
+            $this->ranks[$name]->sortPermissions();
+        }
+    }
+    
+    public function getRankProvider(): RankProvider{
+        if(!$this->isValidProvider(false)) $this->setProviders();
+        return $this->rankProvider;
+    }
+    
+    private function registerPlayers(): void{
         foreach($this->getServer()->getOnlinePlayers() as $player){
             $this->registerPlayer($player);
         }
     }
     
-    /**
-     * @param Player $player
-     */
-    public function registerPlayer(Player $player){
+    public function registerPlayer(Player $player): void{
         $uniqueId = $this->getValidUUID($player);
         if(!isset($this->attachments[$uniqueId])){
             $attachment = $player->addAttachment($this);
@@ -108,20 +125,13 @@ class BlissPerms extends PluginBase {
         }
     }
     
-    /**
-     * @param Player $player
-     * @return null|string
-     */
-    public function getValidUUID(Player $player){
+    public function getValidUUID(Player $player): ?string{
         $uuid = $player->getUniqueId();
         if($uuid instanceof UUID) return $uuid->toString();
         return null;
     }
     
-    /**
-     * @param IPlayer $player
-     */
-    public function updatePermissions(IPlayer $player){
+    public function updatePermissions(IPlayer $player): void{
         if($player instanceof Player){
             $permissions = [];
             foreach($this->getPermissions($player) as $permission){
@@ -141,22 +151,18 @@ class BlissPerms extends PluginBase {
         }
     }
     
-    /**
-     * @param IPlayer $player
-     * @return array
-     */
-    public function getPermissions(IPlayer $player){
-        $group = $this->playerManager->getGroup($player);
-        $groupPerms = $group->getPermissions();
-        $userPerms = $this->playerManager->getUserPermissions($player);
-        return array_merge($userPerms, $groupPerms);
+    public function getPermissions(Player $player): array{
+        $group = $this->getPlayerManager()->getGroup($player);
+        $rank = $this->getPlayerManager()->getRank($player);
+        $userPerms = $this->getPlayerManager()->getUserPermissions($player);
+        return array_merge($userPerms, $group->getPermissions(), $rank->getPermissions());
     }
     
-    /**
-     * @param Player $player
-     * @return null|PermissionAttachment
-     */
-    public function getAttachment(Player $player){
+    public function getPlayerManager(): PlayerManager{
+        return $this->playerManager;
+    }
+    
+    public function getAttachment(Player $player): ?PermissionAttachment{
         $uniqueId = $this->getValidUUID($player);
         return $this->attachments[$uniqueId];
     }
@@ -183,49 +189,27 @@ class BlissPerms extends PluginBase {
         }
     }
     
-    /**
-     * @param Player $player
-     * @param string|null $prefix
-     * @return bool
-     */
-    public function setPrefix(Player $player, ?string $prefix){
+    public function setPrefix(Player $player, ?string $prefix): void{
         $prefix === null ? $text = "" : $text = $prefix;
         $this->getPlayerManager()->setNode($player, "prefix", $text);
-        return true;
     }
     
-    /**
-     * @return PlayerManager
-     */
-    public function getPlayerManager(){
-        return $this->playerManager;
-    }
-    
-    /**
-     * @param Player $player
-     * @param string|null $suffix
-     * @return bool
-     */
-    public function setSuffix(Player $player, ?string $suffix){
+    public function setSuffix(Player $player, ?string $suffix): void{
         $suffix === null ? $text = "" : $text = $suffix;
         $this->getPlayerManager()->setNode($player, "suffix", $text);
-        return true;
     }
     
-    public function onDisable(){
+    public function onDisable(): void{
         $this->unregisterPlayers();
     }
     
-    public function unregisterPlayers(){
+    public function unregisterPlayers(): void{
         foreach($this->getServer()->getOnlinePlayers() as $player){
             $this->unregisterPlayer($player);
         }
     }
     
-    /**
-     * @param Player $player
-     */
-    public function unregisterPlayer(Player $player){
+    public function unregisterPlayer(Player $player): void{
         $uniqueId = $this->getValidUUID($player);
         if($uniqueId !== null){
             if(isset($this->attachments[$uniqueId])) $player->removeAttachment($this->attachments[$uniqueId]);
@@ -233,32 +217,77 @@ class BlissPerms extends PluginBase {
         }
     }
     
-    /**
-     * @param $groupName
-     * @return int
-     */
-    public function addGroup($groupName){
-        $groupsData = $this->getGroupProvider()->getConfig()->getAll();
-        if(!$this->isValidGroupName($groupName)) return self::INVALID;
-        if(isset($groupsData[$groupName])) return self::EXISTS;
-        $groupsData[$groupName] = ["alias" => "", "default" => false, "inheritance" => [], "permissions" => []];
-        $this->getGroupProvider()->setAllData($groupsData);
-        $this->updateGroups();
+    public function addRank(string $name): int{
+        $data = $this->getRankProvider()->getConfig()->getAll();
+        if(!$this->isValidName($name)) return self::INVALID;
+        if(isset($data[$name])) return self::EXISTS;
+        $data[$name] = ["alias" => "", "default" => false, "inheritance" => [], "permissions" => [], "format" => $name];
+        $this->getRankProvider()->setAllData($data);
+        $this->updateRanks();
         return self::SUCCESS;
     }
     
     /**
-     * @param $groupName
-     * @return int
+     * @param string $name
+     * @return false|int
      */
-    public function isValidGroupName($groupName){
-        return preg_match('/[0-9a-zA-Z\xA1-\xFE]$/', $groupName);
+    public function isValidName(string $name){
+        return preg_match('/[0-9a-zA-Z\xA1-\xFE]$/', $name);
+    }
+    
+    public function getDefaultRank(): ?BlissRank{
+        foreach($this->getAllRanks() as $rank){
+            if($rank->isDefault()) return $rank;
+        }
+        return null;
     }
     
     /**
-     * @return BlissGroup|null
+     * @return BlissRank[]
      */
-    public function getDefaultGroup(){
+    public function getAllRanks(): array{
+        return $this->ranks;
+    }
+    
+    /**
+     * @param $name
+     * @return BlissRank|null
+     */
+    public function getRank($name): ?BlissRank{
+        if(!isset($this->ranks[$name])){
+            foreach($this->ranks as $rank){
+                if($rank->getAlias() === $name) return $rank;
+            }
+            return null;
+        }
+        $rank = $this->ranks[$name];
+        if(empty($rank->getData())){
+            return null;
+        }
+        return $rank;
+    }
+    
+    public function removeRank(string $name): ?int{
+        if(!$this->isValidName($name)) return self::MISSING;
+        $data = $this->getRankProvider()->getConfig()->getAll();
+        if(!isset($data[$name])) return self::MISSING;
+        unset($data[$name]);
+        $this->getRankProvider()->setAllData($data);
+        $this->updateRanks();
+        return self::SUCCESS;
+    }
+    
+    public function addGroup(string $name): int{
+        $data = $this->getGroupProvider()->getConfig()->getAll();
+        if(!$this->isValidName($name)) return self::INVALID;
+        if(isset($data[$name])) return self::EXISTS;
+        $data[$name] = ["alias" => "", "default" => false, "inheritance" => [], "permissions" => []];
+        $this->getGroupProvider()->setAllData($data);
+        $this->updateGroups();
+        return self::SUCCESS;
+    }
+    
+    public function getDefaultGroup(): ?BlissGroup{
         foreach($this->getAllGroups() as $group){
             if($group->isDefault()) return $group;
         }
@@ -268,7 +297,7 @@ class BlissPerms extends PluginBase {
     /**
      * @return BlissGroup[]
      */
-    public function getAllGroups(){
+    public function getAllGroups(): array{
         return $this->groups;
     }
     
@@ -276,7 +305,7 @@ class BlissPerms extends PluginBase {
      * @param $name
      * @return BlissGroup|null
      */
-    public function getGroup($name){
+    public function getGroup($name): ?BlissGroup{
         if(!isset($this->groups[$name])){
             foreach($this->groups as $group){
                 if($group->getAlias() === $name) return $group;
@@ -290,25 +319,17 @@ class BlissPerms extends PluginBase {
         return $group;
     }
     
-    /**
-     * @param $groupName
-     * @return bool
-     */
-    public function removeGroup($groupName){
-        if(!$this->isValidGroupName($groupName)) return self::MISSING;
-        $groupsData = $this->getGroupProvider()->getConfig()->getAll();
-        if(!isset($groupsData[$groupName])) return self::MISSING;
-        unset($groupsData[$groupName]);
-        $this->getGroupProvider()->setAllData($groupsData);
+    public function removeGroup(string $name): ?int{
+        if(!$this->isValidName($name)) return self::MISSING;
+        $data = $this->getGroupProvider()->getConfig()->getAll();
+        if(!isset($data[$name])) return self::MISSING;
+        unset($data[$name]);
+        $this->getGroupProvider()->setAllData($data);
         $this->updateGroups();
         return self::SUCCESS;
     }
     
-    /**
-     * @param Player $player
-     * @return mixed
-     */
-    public function getNametag(Player $player){
+    public function getNametag(Player $player): string{
         $group = $this->getPlayerManager()->getGroup($player);
         $nametag = $group->getNode("nametag");
         if($nametag === null){
@@ -321,53 +342,33 @@ class BlissPerms extends PluginBase {
         return $nametag;
     }
     
-    /**
-     * @param string $text
-     * @param Player $player
-     * @param string $message
-     * @return mixed
-     */
-    public function applyTags(string $text, Player $player, string $message = ""){
-        $text = str_replace("{name}", $player->getDisplayName(), $text);
+    public function applyTags(string $text, Player $player, string $message = ""): string{
+        $text = str_replace(["{name}", "{prefix}", "{suffix}"], [$player->getDisplayName(), $this->getPrefix($player), $this->getSuffix($player)], $text);
         if($player->hasPermission("blissperms.colorchat")){
             $text = str_replace("{chat}", TextFormat::colorize($message), $text);
         }else{
             $text = str_replace("{chat}", TextFormat::clean($message), $text);
         }
         if($this->factions !== null){
-            $text = str_replace("{facName}", $this->factions->getPlayerFaction($player), $text);
-            $text = str_replace("{facRank}", $this->factions->getPlayerRank($player), $text);
+            $text = str_replace("{facName}", $this->factions->getFaction($player), $text);
+            $text = str_replace("{facRank}", $this->factions->getFactionRank($player), $text);
         }else{
             $text = str_replace("{facName}", "", $text);
             $text = str_replace("{facRank}", "", $text);
         }
-        $text = str_replace("{prefix}", $this->getPrefix($player), $text);
-        $text = str_replace("{suffix}", $this->getSuffix($player), $text);
+        $text = str_replace("{rank}", $this->getPlayerManager()->getRank($player)->getNode("format"), $text);
         return $text;
     }
     
-    /**
-     * @param Player $player
-     * @return mixed|null|string
-     */
-    public function getPrefix(Player $player){
+    public function getPrefix(Player $player): ?string{
         return $this->getPlayerManager()->getNode($player, "prefix");
     }
     
-    /**
-     * @param Player $player
-     * @return mixed|null|string
-     */
-    public function getSuffix(Player $player){
+    public function getSuffix(Player $player): ?string{
         return $this->getPlayerManager()->getNode($player, "suffix");
     }
     
-    /**
-     * @param Player $player
-     * @param $message
-     * @return mixed
-     */
-    public function getChatFormat(Player $player, $message){
+    public function getChatFormat(Player $player, string $message): string{
         $group = $this->getPlayerManager()->getGroup($player);
         $chatFormat = $group->getNode("chat");
         if($chatFormat === null){

@@ -14,11 +14,9 @@ use pocketmine\event\player\PlayerQuitEvent;
  */
 class EventListener implements Listener {
     
+    /** @var BlissPerms */
     private $plugin;
     
-    /**
-     * @param BlissPerms $plugin
-     */
     public function __construct(BlissPerms $plugin){
         $this->plugin = $plugin;
     }

@@ -7,6 +7,7 @@ use pocketmine\Player;
 use pocketmine\utils\Config;
 use Xenophilicy\BlissPerms\BlissGroup;
 use Xenophilicy\BlissPerms\BlissPerms;
+use Xenophilicy\BlissPerms\BlissRank;
 
 /**
  * Class PlayerManager
@@ -14,29 +15,24 @@ use Xenophilicy\BlissPerms\BlissPerms;
  */
 class PlayerManager {
     
+    /** @var BlissPerms */
     private $plugin;
+    /** @var Config */
     private $players;
     
-    /**
-     * @param BlissPerms $plugin
-     */
     public function __construct(BlissPerms $plugin){
         $this->plugin = $plugin;
         $this->plugin->saveResource("players.yml");
         $this->players = new Config($this->plugin->getDataFolder() . "players.yml", Config::YAML);
     }
     
-    /**
-     * @param Player $player
-     * @return BlissGroup|null
-     */
-    public function getGroup(Player $player){
-        $groupName = $this->getNode($player, "group");
-        $group = $this->plugin->getGroup($groupName);
+    public function getGroup(Player $player): BlissGroup{
+        $name = $this->getNode($player, "group");
+        $group = $this->plugin->getGroup($name);
         if($group === null){
-            $defaultGroup = $this->plugin->getDefaultGroup();
-            $this->setGroup($player, $defaultGroup);
-            return $defaultGroup;
+            $default = $this->plugin->getDefaultGroup();
+            $this->setGroup($player, $default);
+            return $default;
         }
         return $group;
     }
@@ -48,78 +44,72 @@ class PlayerManager {
      */
     public function getNode(Player $player, $node){
         $userData = $this->getData($player);
-        if(!isset($userData[$node])) return null;
-        return $userData[$node];
+        return $userData[$node] ?? null;
     }
     
-    /**
-     * @param Player $player
-     * @return array
-     */
-    public function getData(Player $player){
+    public function getData(Player $player): array{
         return $this->getPlayerData($player);
     }
     
-    /**
-     * @param IPlayer $player
-     * @return array|bool|mixed
-     */
-    public function getPlayerData(IPlayer $player){
+    public function getPlayerData(IPlayer $player): array{
         $userName = strtolower($player->getName());
         if(!$this->players->exists($userName)){
-            return ["group" => $this->plugin->getDefaultGroup()->getName(), "permissions" => []];
+            return ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $this->plugin->getDefaultRank()->getName(), "permissions" => []];
         }
         return $this->players->get($userName);
     }
     
-    /**
-     * @param Player $player
-     * @param BlissGroup $group
-     */
-    public function setGroup(Player $player, BlissGroup $group){
+    public function setGroup(Player $player, BlissGroup $group): void{
         $this->setNode($player, "group", $group->getName());
         $nametag = $this->plugin->getNametag($player);
         $player->setNameTag($nametag);
+        $this->plugin->updatePermissions($player);
     }
     
     /**
      * @param Player $player
-     * @param $node
+     * @param string $node
      * @param $value
      */
-    public function setNode(Player $player, $node, $value){
+    public function setNode(Player $player, string $node, $value){
         $tempUserData = $this->getData($player);
         $tempUserData[$node] = $value;
         $this->setData($player, $tempUserData);
     }
     
-    /**
-     * @param Player $player
-     * @param array $data
-     */
-    public function setData(Player $player, array $data){
+    public function setData(Player $player, array $data): void{
         $this->setPlayerData($player, $data);
     }
     
-    /**
-     * @param IPlayer $player
-     * @param array $tempUserData
-     */
-    public function setPlayerData(IPlayer $player, array $tempUserData){
+    public function setPlayerData(IPlayer $player, array $tempUserData): void{
         $userName = strtolower($player->getName());
         if(!$this->players->exists($userName)){
-            $this->players->set($userName, ["group" => $this->plugin->getDefaultGroup()->getName(), "permissions" => []]);
+            $this->players->set($userName, ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $this->plugin->getDefaultRank()->getName(), "permissions" => []]);
         }
         if(isset($tempUserData["userName"])) unset($tempUserData["userName"]);
         $this->players->set($userName, $tempUserData);
         $this->players->save();
     }
     
-    /**
-     * @param Player $player
-     * @return array
-     */
-    public function getUserPermissions(Player $player){
+    public function getRank(Player $player): BlissRank{
+        $name = $this->getNode($player, "rank");
+        $rank = $this->plugin->getRank($name);
+        if($rank === null){
+            $default = $this->plugin->getDefaultRank();
+            $this->setRank($player, $default);
+            return $default;
+        }
+        return $rank;
+    }
+    
+    public function setRank(Player $player, BlissRank $rank): void{
+        $this->setNode($player, "rank", $rank->getName());
+        $nametag = $this->plugin->getNametag($player);
+        $player->setNameTag($nametag);
+        $this->plugin->updatePermissions($player);
+    }
+    
+    public function getUserPermissions(Player $player): array{
         $permissions = $this->getNode($player, "permissions");
         if(!is_array($permissions)){
             return [];
@@ -127,11 +117,7 @@ class PlayerManager {
         return $permissions;
     }
     
-    /**
-     * @param Player $player
-     * @param $node
-     */
-    public function removeNode(Player $player, $node){
+    public function removeNode(Player $player, string $node): void{
         $tempUserData = $this->getData($player);
         if(isset($tempUserData[$node])){
             unset($tempUserData[$node]);
@@ -139,22 +125,14 @@ class PlayerManager {
         }
     }
     
-    /**
-     * @param Player $player
-     * @param $permission
-     */
-    public function setPermission(Player $player, $permission){
+    public function setPermission(Player $player, string $permission): void{
         $tempUserData = $this->getData($player);
         $tempUserData["permissions"][] = $permission;
         $this->setData($player, $tempUserData);
         $this->plugin->updatePermissions($player);
     }
     
-    /**
-     * @param Player $player
-     * @param $permission
-     */
-    public function unsetPermission(Player $player, $permission){
+    public function unsetPermission(Player $player, string $permission): void{
         $tempUserData = $this->getData($player);
         if(!in_array($permission, $tempUserData["permissions"])) return;
         $tempUserData["permissions"] = array_diff($tempUserData["permissions"], [$permission]);

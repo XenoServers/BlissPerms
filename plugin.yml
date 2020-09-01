@@ -1,7 +1,9 @@
 name: BlissPerms
 main: Xenophilicy\BlissPerms\BlissPerms
-version: 1.1.1
+version: 2.1.0
 api: 3.0.0
+loadbefore:
+  - BehindBars
 author: Xenophilicy
 permissions:
   blissperms:
@@ -21,6 +23,17 @@ permissions:
             default: op
       blissperms.setperm:
         default: op
+      blissperms.rank:
+        default: op
+        children:
+          blissperms.rank.add:
+            default: op
+          blissperms.rank.remove:
+            default: op
+          blissperms.rank.list:
+            default: op
+          blissperms.rank.set:
+            default: op
       blissperms.group:
         default: op
         children:

@@ -1,0 +1,6 @@
+# This is where ranks are stored
+A:
+  alias: a
+  default: true
+  inheritance: [ ]
+  permissions: [ ]
