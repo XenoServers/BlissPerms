@@ -16,11 +16,13 @@ use Xenophilicy\BlissPerms\Command\Rank;
 use Xenophilicy\BlissPerms\Command\SetPerm;
 use Xenophilicy\BlissPerms\Command\SetPrefix;
 use Xenophilicy\BlissPerms\Command\SetSuffix;
+use Xenophilicy\BlissPerms\Command\Tier;
 use Xenophilicy\BlissPerms\Data\PlayerManager;
 use Xenophilicy\BlissPerms\Factions\FactionsPro;
 use Xenophilicy\BlissPerms\Factions\PiggyFactions;
 use Xenophilicy\BlissPerms\Provider\GroupProvider;
 use Xenophilicy\BlissPerms\Provider\RankProvider;
+use Xenophilicy\BlissPerms\Provider\TierProvider;
 
 /**
  * Class BlissPerms
@@ -44,10 +46,14 @@ class BlissPerms extends PluginBase {
     private $groupProvider;
     /** @var RankProvider */
     private $rankProvider;
+    /** @var TierProvider */
+    private $tierProvider;
     /** @var array */
     private $groups = [];
     /** @var array */
     private $ranks = [];
+    /** @var array */
+    private $tiers = [];
     
     public function onLoad(): void{
         $this->saveDefaultConfig();
@@ -68,6 +74,7 @@ class BlissPerms extends PluginBase {
         $cmdMap = $this->getServer()->getCommandMap();
         $cmdMap->register("group", new Group("group", $this));
         $cmdMap->register("rank", new Rank("rank", $this));
+        $cmdMap->register("tier", new Tier("tier", $this));
         $cmdMap->register("setperm", new SetPerm("setperm", $this));
         $cmdMap->register("setprefix", new SetPrefix("setprefix", $this));
         $cmdMap->register("setsuffix", new SetSuffix("setsuffix", $this));
@@ -76,8 +83,10 @@ class BlissPerms extends PluginBase {
     private function setProviders(): void{
         $this->groupProvider = new GroupProvider($this);
         $this->rankProvider = new RankProvider($this);
+        $this->tierProvider = new TierProvider($this);
         $this->updateGroups();
         $this->updateRanks();
+        $this->updateTiers();
     }
     
     private function updateGroups(): void{
@@ -108,6 +117,19 @@ class BlissPerms extends PluginBase {
     public function getRankProvider(): RankProvider{
         if(!$this->isValidProvider(false)) $this->setProviders();
         return $this->rankProvider;
+    }
+    
+    private function updateTiers(): void{
+        $this->tiers = [];
+        foreach(array_keys($this->getTierProvider()->getConfig()->getAll()) as $name){
+            $this->tiers[$name] = new BlissTier($this, $name);
+            $this->tiers[$name]->sortPermissions();
+        }
+    }
+    
+    public function getTierProvider(): TierProvider{
+        if(!$this->isValidProvider(false)) $this->setProviders();
+        return $this->tierProvider;
     }
     
     private function registerPlayers(): void{
@@ -154,8 +176,9 @@ class BlissPerms extends PluginBase {
     public function getPermissions(Player $player): array{
         $group = $this->getPlayerManager()->getGroup($player);
         $rankPerms = is_null($this->getPlayerManager()->getRank($player)) ? [] : $this->getPlayerManager()->getRank($player)->getPermissions();
+        $tierPerms = is_null($this->getPlayerManager()->getTier($player)) ? [] : $this->getPlayerManager()->getTier($player)->getPermissions();
         $userPerms = $this->getPlayerManager()->getUserPermissions($player);
-        return array_merge($userPerms, $group->getPermissions(), $rankPerms);
+        return array_merge($userPerms, $group->getPermissions(), $rankPerms, $tierPerms);
     }
     
     public function getPlayerManager(): PlayerManager{
@@ -217,6 +240,24 @@ class BlissPerms extends PluginBase {
         }
     }
     
+    public function addTier(string $name): int{
+        $data = $this->getTierProvider()->getConfig()->getAll();
+        if(!$this->isValidName($name)) return self::INVALID;
+        if(isset($data[$name])) return self::EXISTS;
+        $data[$name] = ["alias" => "", "default" => false, "inheritance" => [], "permissions" => [], "format" => $name];
+        $this->getTierProvider()->setAllData($data);
+        $this->updateTiers();
+        return self::SUCCESS;
+    }
+    
+    /**
+     * @param string $name
+     * @return false|int
+     */
+    public function isValidName(string $name){
+        return preg_match('/[0-9a-zA-Z\xA1-\xFE]$/', $name);
+    }
+    
     public function addRank(string $name): int{
         $data = $this->getRankProvider()->getConfig()->getAll();
         if(!$this->isValidName($name)) return self::INVALID;
@@ -227,12 +268,18 @@ class BlissPerms extends PluginBase {
         return self::SUCCESS;
     }
     
+    public function getDefaultTier(): ?BlissTier{
+        foreach($this->getAllTiers() as $tier){
+            if($tier->isDefault()) return $tier;
+        }
+        return null;
+    }
+    
     /**
-     * @param string $name
-     * @return false|int
+     * @return BlissTier[]
      */
-    public function isValidName(string $name){
-        return preg_match('/[0-9a-zA-Z\xA1-\xFE]$/', $name);
+    public function getAllTiers(): array{
+        return $this->tiers;
     }
     
     public function getDefaultRank(): ?BlissRank{
@@ -247,6 +294,34 @@ class BlissPerms extends PluginBase {
      */
     public function getAllRanks(): array{
         return $this->ranks;
+    }
+    
+    /**
+     * @param $name
+     * @return BlissTier|null
+     */
+    public function getTier($name): ?BlissTier{
+        if(!isset($this->tiers[$name])){
+            foreach($this->tiers as $tier){
+                if($tier->getAlias() === $name) return $tier;
+            }
+            return null;
+        }
+        $tier = $this->tiers[$name];
+        if(empty($tier->getData())){
+            return null;
+        }
+        return $tier;
+    }
+    
+    public function removeTier(string $name): ?int{
+        if(!$this->isValidName($name)) return self::MISSING;
+        $data = $this->getTierProvider()->getConfig()->getAll();
+        if(!isset($data[$name])) return self::MISSING;
+        unset($data[$name]);
+        $this->getTierProvider()->setAllData($data);
+        $this->updateTiers();
+        return self::SUCCESS;
     }
     
     /**
@@ -358,6 +433,8 @@ class BlissPerms extends PluginBase {
         }
         $rank = is_null($this->getPlayerManager()->getRank($player)) ? "" : $this->getPlayerManager()->getRank($player)->getNode("format");
         $text = str_replace("{rank}", $rank, $text);
+        $tier = is_null($this->getPlayerManager()->getTier($player)) ? "" : $this->getPlayerManager()->getTier($player)->getNode("format");
+        $text = str_replace("{tier}", $tier, $text);
         return $text;
     }
     

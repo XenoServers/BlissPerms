@@ -59,7 +59,7 @@ class BlissRank {
     }
     
     /**
-     * @return BlissRank[]
+     * @return self[]
      */
     public function getParents(): array{
         if($this->parents === []){

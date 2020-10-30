@@ -8,6 +8,7 @@ use pocketmine\utils\Config;
 use Xenophilicy\BlissPerms\BlissGroup;
 use Xenophilicy\BlissPerms\BlissPerms;
 use Xenophilicy\BlissPerms\BlissRank;
+use Xenophilicy\BlissPerms\BlissTier;
 
 /**
  * Class PlayerManager
@@ -54,8 +55,9 @@ class PlayerManager {
     public function getPlayerData(IPlayer $player): array{
         $userName = strtolower($player->getName());
         $rank = is_null($this->plugin->getDefaultRank()) ? null : $this->plugin->getDefaultRank()->getName();
+        $tier = is_null($this->plugin->getDefaultTier()) ? null : $this->plugin->getDefaultTier()->getName();
         if(!$this->players->exists($userName)){
-            return ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $rank, "permissions" => []];
+            return ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $rank, "tier" => $tier, "permissions" => []];
         }
         return $this->players->get($userName);
     }
@@ -86,11 +88,25 @@ class PlayerManager {
         $userName = strtolower($player->getName());
         if(!$this->players->exists($userName)){
             $rank = is_null($this->plugin->getDefaultRank()) ? null : $this->plugin->getDefaultRank()->getName();
-            $this->players->set($userName, ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $rank, "permissions" => []]);
+            $tier = is_null($this->plugin->getDefaultTier()) ? null : $this->plugin->getDefaultTier()->getName();
+            $this->players->set($userName, ["group" => $this->plugin->getDefaultGroup()->getName(), "rank" => $rank, "tier" => $tier, "permissions" => []]);
         }
         if(isset($tempUserData["userName"])) unset($tempUserData["userName"]);
         $this->players->set($userName, $tempUserData);
         $this->players->save();
+    }
+    
+    public function getTier(Player $player): ?BlissTier{
+        $name = $this->getNode($player, "tier");
+        return $this->plugin->getTier($name);
+    }
+    
+    public function setTier(Player $player, ?BlissTier $tier): void{
+        $tierName = is_null($tier) ? null : $tier->getName();
+        $this->setNode($player, "tier", $tierName);
+        $nametag = $this->plugin->getNametag($player);
+        $player->setNameTag($nametag);
+        $this->plugin->updatePermissions($player);
     }
     
     public function getRank(Player $player): ?BlissRank{

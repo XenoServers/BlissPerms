@@ -1,0 +1,6 @@
+# This is where tiers are stored
+A:
+  alias: a
+  default: true
+  inheritance: [ ]
+  permissions: [ ]
