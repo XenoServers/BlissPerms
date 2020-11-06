@@ -1,6 +1,6 @@
 name: BlissPerms
 main: Xenophilicy\BlissPerms\BlissPerms
-version: 2.2.0
+version: 2.2.1
 api: 3.0.0
 loadbefore:
   - BehindBars

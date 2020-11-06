@@ -11,6 +11,7 @@ use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
 use pocketmine\utils\UUID;
+use Xenophilicy\BehindBars\BehindBars;
 use Xenophilicy\BlissPerms\Command\Group;
 use Xenophilicy\BlissPerms\Command\Rank;
 use Xenophilicy\BlissPerms\Command\SetPerm;
@@ -54,6 +55,8 @@ class BlissPerms extends PluginBase {
     private $ranks = [];
     /** @var array */
     private $tiers = [];
+    /** @var BehindBars|null */
+    private $behindbars = null;
     
     public function onLoad(): void{
         $this->saveDefaultConfig();
@@ -68,6 +71,9 @@ class BlissPerms extends PluginBase {
         $this->setProviders();
         $this->registerPlayers();
         $this->loadFactionsPlugin();
+        if($this->getConfig()->get("enable-bb", false)){
+            $this->behindbars = $this->getServer()->getPluginManager()->getPlugin("BehindBars");
+        }
     }
     
     private function registerCommands(): void{
@@ -435,6 +441,10 @@ class BlissPerms extends PluginBase {
         $text = str_replace("{rank}", $rank, $text);
         $tier = is_null($this->getPlayerManager()->getTier($player)) ? "" : $this->getPlayerManager()->getTier($player)->getNode("format");
         $text = str_replace("{tier}", $tier, $text);
+        if($this->behindbars instanceof BehindBars){
+            $prestige = $this->behindbars->getRankManager()->getPrestigeLevel($player);
+            $text = str_replace("{prestige}", $prestige, $text);
+        }
         return $text;
     }
     
