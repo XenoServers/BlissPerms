@@ -437,12 +437,14 @@ class BlissPerms extends PluginBase {
             $text = str_replace("{facName}", "", $text);
             $text = str_replace("{facRank}", "", $text);
         }
-        $rank = is_null($this->getPlayerManager()->getRank($player)) ? "" : $this->getPlayerManager()->getRank($player)->getNode("format");
+        $ds = isset(self::$settings["enable-ds"]) && self::$settings["enable-ds"] ? " " : "";
+        $rank = is_null($this->getPlayerManager()->getRank($player)) ? "" : $this->getPlayerManager()->getRank($player)->getNode("format") . $ds;
         $text = str_replace("{rank}", $rank, $text);
         $tier = is_null($this->getPlayerManager()->getTier($player)) ? "" : $this->getPlayerManager()->getTier($player)->getNode("format");
         $text = str_replace("{tier}", $tier, $text);
         if($this->behindbars instanceof BehindBars){
             $prestige = $this->behindbars->getRankManager()->getPrestigeLevel($player);
+            if($prestige === 0) $prestige = "";else $prestige .= "-";
             $text = str_replace("{prestige}", $prestige, $text);
         }
         return $text;

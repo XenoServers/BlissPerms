@@ -13,6 +13,9 @@ factions-plugin: FactionsPro
 # This is an internal setting for enabling BehindBars (XenoServers Prison core)
 enable-bb: false
 
+# This allows dynamic spacing between the rank tag and the rest of the format
+enable-ds: true
+
 # These are the default values that are used when a new group is made or when an invalid group is found
 # Available tags: {name}, {chat}, {facName}, {facRank}, {prefix}, {suffix}
 default:

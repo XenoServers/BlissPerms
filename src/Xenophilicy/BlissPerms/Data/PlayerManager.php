@@ -98,7 +98,13 @@ class PlayerManager {
     
     public function getTier(Player $player): ?BlissTier{
         $name = $this->getNode($player, "tier");
-        return $this->plugin->getTier($name);
+        $tier = $this->plugin->getTier($name);
+        if($tier === null){
+            $default = $this->plugin->getDefaultTier();
+            $this->setTier($player, $default);
+            return $default;
+        }
+        return $tier;
     }
     
     public function setTier(Player $player, ?BlissTier $tier): void{
